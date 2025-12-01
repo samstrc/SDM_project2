@@ -2,6 +2,10 @@
 link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_final.csv"
 df <- read.csv(link)
 
+# Correlation table ------------------------------------------
+numeric_df <- df[sapply(df, is.numeric)]
+round(cor(numeric_df, use = "pairwise.complete.obs"), 3)
+
 df$is_high_turnover <- factor(df$is_high_turnover, # Treat 0 and 1 as factors since glm in R expects binary outcome to be a factor
                               levels = c(0, 1),
                               labels = c("Low", "High"))
