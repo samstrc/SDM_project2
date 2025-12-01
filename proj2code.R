@@ -2,7 +2,7 @@
 link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_final.csv"
 df <- read.csv(link)
 
-df$is_high_turnover <- factor(df$is_high_turnover,
+df$is_high_turnover <- factor(df$is_high_turnover, # Treat 0 and 1 as factors since glm in R expects binary outcome to be a factor
                               levels = c(0, 1),
                               labels = c("Low", "High"))
 
@@ -11,11 +11,12 @@ df$is_high_turnover <- factor(df$is_high_turnover,
 # Response: productivity_index
 # Predictor: performance_rating
 
+# "Do people who get better job reviews have more professional output?"
 lin_simple <- lm(productivity_index ~ performance_rating, data = df)
 summary(lin_simple)
 
 # Shapiro–Wilk test for normality of residuals...this matters, not always the normality of variables
-shapiro.test(residuals(lin_simple))
+shapiro.test(residuals(lin_simple)) # 0.21 means residuals are normal, small p would mean the opposite
 
 # Scatterplot with fitted line (clean blue colors)
 plot(df$performance_rating, df$productivity_index,
@@ -28,13 +29,13 @@ abline(lin_simple, col = "#003399", lwd = 2)
 
 # MULTIPLE LINEAR REGRESSION (2 predictors + interaction)----------------
 lin_multi <- lm(
-  productivity_index ~ performance_rating * sleep_hours_avg,
+  productivity_index ~ performance_rating * sleep_hours_avg, # Considers both & their interaction
   data = df
 )
 summary(lin_multi)
 
 # ANOVA: simple vs multi model
-anova(lin_simple, lin_multi)
+anova(lin_simple, lin_multi) # Barely shows that the simpler model is just as good
 
 # Shapiro–Wilk test
 shapiro.test(residuals(lin_multi))
@@ -56,7 +57,7 @@ abline(lin_sleep_only, col = "#003399", lwd = 2)
 
 par(mfrow = c(1, 3))
 
-# Residuals vs Fitted
+# Residuals vs Fitted 
 plot(lin_simple$fitted.values, residuals(lin_simple),
      xlab = "Fitted Values",
      ylab = "Residuals",
@@ -64,13 +65,13 @@ plot(lin_simple$fitted.values, residuals(lin_simple),
      pch = 19, col = "#3366CC")
 abline(h = 0, lty = 2)
 
-# QQ Plot
+# QQ Plot of residuals
 qqnorm(residuals(lin_simple),
        main = "Simple Model:\nNormal Q-Q Plot",
        pch = 20, col = "#3366CC", cex = 0.7)
 qqline(residuals(lin_simple), col = "#003399", lwd = 2)
 
-# Histogram
+# Histogram of residuals
 hist(residuals(lin_simple),
      breaks = 20,
      main = "Simple Model:\nHistogram of Residuals",
@@ -92,13 +93,13 @@ plot(lin_multi$fitted.values, residuals(lin_multi),
      pch = 19, col = "#3366CC")
 abline(h = 0, lty = 2)
 
-# QQ Plot
+# QQ Plot of residuals
 qqnorm(residuals(lin_multi),
        main = "Multiple Model:\nNormal Q-Q Plot",
        pch = 20, col = "#3366CC", cex = 0.7)
 qqline(residuals(lin_multi), col = "#003399", lwd = 2)
 
-# Histogram
+# Histogram of residuals
 hist(residuals(lin_multi),
      breaks = 20,
      main = "Multiple Model:\nHistogram of Residuals",
@@ -109,7 +110,7 @@ par(mfrow = c(1, 1))
 
 
 # LOGISTIC REGRESSION (2 predictors + interaction)---------------------
-log_full <- glm(
+log_full <- glm( # Look at AIC & statistically significant predictors, test other variables
   is_high_turnover ~ work_life_balance_ratio * sleep_hours_avg,
   data = df,
   family = binomial
