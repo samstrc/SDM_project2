@@ -1,5 +1,5 @@
 # Load data from github
-link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_tuned.csv"
+link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_regenerated.csv"
 df <- read.csv(link)
 
 # Correlation table ------------------------------------------
@@ -192,64 +192,69 @@ hist(residuals(lin_multi),
 par(mfrow = c(1, 1))
 
 
-# LOGISTIC REGRESSION (2 predictors + interaction)---------------------
-log_full <- glm( # Look at AIC & statistically significant predictors, test other variables
-  is_high_turnover ~ work_life_balance_ratio * sleep_hours_avg,
+# LOGISTIC REGRESSION (2 predictors + interaction)
+# Work-Life Balance Ratio and Salary predicting turnover
+
+df$is_high_turnover <- factor(df$is_high_turnover,
+                              levels = c("Low", "High"))
+
+# Full model: includes interaction
+log_full <- glm(
+  is_high_turnover ~ work_life_balance_ratio * salary,
   data = df,
   family = binomial
 )
 summary(log_full)
 
+# Reduced model: main effects only
 log_reduced <- glm(
-  is_high_turnover ~ work_life_balance_ratio + sleep_hours_avg,
+  is_high_turnover ~ work_life_balance_ratio + salary,
   data = df,
   family = binomial
 )
+summary(log_reduced)
 
+# Likelihood ratio test (reduced vs full)
 anova(log_reduced, log_full, test = "Chisq")
 
+# AIC comparison
+AIC(log_reduced, log_full)
 
-# LOGISTIC PLOTS 
-
+# Exploratory plots
 plot(df$work_life_balance_ratio, df$turnover_risk,
      xlab = "Work-Life Balance Ratio",
      ylab = "Turnover Risk (Probability)",
      main = "Turnover Risk vs Work-Life Balance Ratio",
      pch = 19, col = "#3366CC")
 
-plot(df$sleep_hours_avg, df$turnover_risk,
-     xlab = "Average Sleep Hours",
+plot(df$salary, df$turnover_risk,
+     xlab = "Salary",
      ylab = "Turnover Risk (Probability)",
-     main = "Turnover Risk vs Sleep Hours",
+     main = "Turnover Risk vs Salary",
      pch = 19, col = "#3366CC")
 
+# Fitted curve: vary work-life balance, hold salary constant
+salary_fixed <- mean(df$salary, na.rm = TRUE)
 
-# LOGISTIC REGRESSION FITTED CURVE (Option A)
-# Predicted probability vs Work-Life Balance Ratio, Sleep fixed at its mean
-
-sleep_fixed <- mean(df$sleep_hours_avg, na.rm = TRUE)
-
-# Sequence of WLB values for smooth curve
 wlb_seq <- seq(min(df$work_life_balance_ratio, na.rm = TRUE),
                max(df$work_life_balance_ratio, na.rm = TRUE),
                length.out = 200)
 
 pred_data <- data.frame(
   work_life_balance_ratio = wlb_seq,
-  sleep_hours_avg = sleep_fixed
+  salary = salary_fixed
 )
 
-# Predicted probabilities from the logistic regression model
-pred_probs <- predict(log_full, newdata = pred_data, type = "response")
+pred_probs <- predict(log_reduced, newdata = pred_data, type = "response")
 
-# Plot fitted curve with optional actual points
 plot(wlb_seq, pred_probs,
      type = "l",
      lwd = 3,
      col = "#3366CC",
      xlab = "Work-Life Balance Ratio",
      ylab = "Predicted Probability of High Turnover",
-     main = "Logistic Regression Fitted Curve\nSleep Held Constant at Mean")
+     main = "Turnover Probability vs Work-Life Balance Ratio\nSalary Held Constant")
 
 points(df$work_life_balance_ratio, df$turnover_risk,
        pch = 19, col = rgb(0, 0, 0.6, 0.25))
+
