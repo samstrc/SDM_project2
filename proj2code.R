@@ -1,5 +1,5 @@
 # Load data from github
-link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_final.csv"
+link <- "https://raw.githubusercontent.com/samstrc/SDM_project2/refs/heads/main/remote_work_tuned.csv"
 df <- read.csv(link)
 
 # Correlation table ------------------------------------------
@@ -9,6 +9,85 @@ round(cor(numeric_df, use = "pairwise.complete.obs"), 3)
 df$is_high_turnover <- factor(df$is_high_turnover, # Treat 0 and 1 as factors since glm in R expects binary outcome to be a factor
                               levels = c(0, 1),
                               labels = c("Low", "High"))
+
+
+
+##########################################
+# ONE-WAY ANOVA: Gender → Productivity Score
+# FULL BASE-R SCRIPT
+##########################################
+names(df)
+# 1. Group means and SDs
+tapply(df$productivity_index, df$gender, mean)
+tapply(df$productivity_index, df$gender, sd)
+
+# 2. Fit ANOVA model
+anova_gender <- aov(productivity_index ~ gender, data = df)
+summary(anova_gender)
+
+# 3. Effect size (Eta Squared, manual formula)
+anova_tbl <- summary(anova_gender)[[1]]
+SS_between <- anova_tbl["gender", "Sum Sq"]
+SS_total   <- sum(anova_tbl[,"Sum Sq"])
+eta_sq <- SS_between / SS_total
+eta_sq  # print eta-squared
+
+# 4. Homogeneity of variance (Bartlett's Test)
+bartlett.test(productivity_index ~ gender, data = df)
+
+##########################################
+# 5. Diagnostic Plots
+##########################################
+
+par(mfrow = c(1, 2))
+
+# Residuals vs Fitted
+plot(fitted(anova_gender), residuals(anova_gender),
+     pch = 19, col = "#3366CC",
+     xlab = "Fitted Values", ylab = "Residuals",
+     main = "ANOVA: Residuals vs Fitted")
+abline(h = 0, lty = 2)
+
+# Normal Q-Q plot
+qqnorm(residuals(anova_gender),
+       pch = 19, col = "#3366CC",
+       main = "ANOVA: Normal Q-Q Plot")
+qqline(residuals(anova_gender), col = "#003399", lwd = 2)
+
+par(mfrow = c(1, 1))
+
+##########################################
+# 6. Boxplot
+##########################################
+
+boxplot(productivity_index ~ gender, data = df,
+        col = "#99B2FF", border = "#003399",
+        main = "Productivity Index by Gender",
+        ylab = "Productivity Index")
+
+##########################################
+# 7. Tukey HSD (Base R)
+##########################################
+
+tukey_results <- TukeyHSD(anova_gender)
+tukey_results
+
+# Tukey plot
+plot(tukey_results, col = "#3366CC")
+
+# 8. Interaction Plot
+# Note: This only shows interaction if you add a second factor.
+# We use department as an example.
+
+interaction.plot(x.factor = df$gender,
+                 trace.factor = df$department,
+                 response = df$productivity_index,
+                 col = c("#3366CC", "#FF5733", "#009933", "#CC00CC"),
+                 lwd = 2,
+                 ylab = "Productivity Index",
+                 xlab = "Gender",
+                 trace.label = "Department",
+                 main = "Interaction Plot: Gender × Department")
 
 
 # SIMPLE LINEAR REGRESSION (just 1 predictor)
