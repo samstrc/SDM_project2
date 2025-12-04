@@ -118,9 +118,6 @@ summary(lin_simple)
 # Shapiro–Wilk test for normality of residuals...this matters, not always the normality of variables
 shapiro.test(residuals(lin_simple)) # 0.21 means residuals are normal, small p would mean the opposite
 
-# Check for influential points on model using cook's distance 
-plot(lin_simple, which = 5) # Leverage scale is super small, red line is straight. This is good. 
-
 # Scatterplot with fitted line (clean blue colors)
 plot(df$performance_rating, df$productivity_index,
      xlab = "Performance Rating",
@@ -129,7 +126,10 @@ plot(df$performance_rating, df$productivity_index,
      pch = 19, col = "#3366CC")
 abline(lin_simple, col = "#003399", lwd = 2)
 
-par(mfrow = c(1, 3))
+# Check for influential points on model using cook's distance 
+plot(lin_simple, which = 5) # Leverage scale is super small, red line is straight. This is good. 
+
+par(mfrow = c(1, 3)) # Prepare to put 3 figures on one plot
 
 # Residuals vs Fitted 
 plot(lin_simple$fitted.values, residuals(lin_simple),
@@ -154,29 +154,13 @@ hist(residuals(lin_simple),
 
 par(mfrow = c(1, 1)) # Reset num of figures per image
 
-# (6) MULTIPLE LINEAR REGRESSION (2 predictors + interaction)-------------------------------------
+# (6) MULTIPLE LINEAR REGRESSION (2 predictors + interaction, one version without interaction)-------------------------------------
 lin_multi_int <- lm(
   productivity_index ~ performance_rating * sleep_hours_avg, # Includes interaction
   data = df
 )
 
 summary(lin_multi_int)
-
-# Correlation between predictors (multicollinearity check)
-cor(df$performance_rating, df$sleep_hours_avg)
-
-# Influence check
-plot(lin_multi_int, which = 5)  
-# (Residuals vs. Leverage with Cook’s contours)
-
-# ANOVA: simple vs. interaction model
-anova(lin_simple, lin_multi_int)
-
-# Normality test on residuals
-shapiro.test(residuals(lin_multi_int))
-
-
-## Plot 3d model, no interaction 
 
 lin_multi <- lm(
   productivity_index ~ performance_rating + sleep_hours_avg,
@@ -185,7 +169,22 @@ lin_multi <- lm(
 
 summary(lin_multi)
 
+# ANOVA: simple vs. multi model + no inter. vs. multi model + inter.
+anova(lin_simple, lin_multi, lin_multi_int)
 
+# Correlation between predictors (multicollinearity check)
+cor(df$performance_rating, df$sleep_hours_avg)
+
+# Cook's contours plot
+plot(lin_multi_int, which = 5)  
+
+# Normality test on residuals + interaction
+shapiro.test(residuals(lin_multi_int)) # pass
+
+# Normality test on residuals (no interaction)
+shapiro.test(residuals(lin_multi)) # pass
+
+## Plot 3d model, no interaction 
 ## 3D regression plane
 # Create a grid of predictor values
 perf_seq  <- seq(min(df$performance_rating), max(df$performance_rating), length.out = 40)
@@ -270,7 +269,7 @@ summary(log_full) # Colinearity affects this model, structured multicolinearity 
 wlbalance_sal_cor = cor(df$work_life_balance_ratio, df$salary)
 wlbalance_sal_cor # Slight present, would have to be 95%+ to consider dropping a variable
 
-# Reduced model: main effects only, no interaction
+# Reduced model: main effects only, no interaction, **Best model! :)
 log_reduced <- glm(
   is_high_turnover ~ work_life_balance_ratio + salary,
   data = df,
@@ -297,7 +296,9 @@ anova(log_super_reduced, log_reduced, log_full, test = "Chisq")
 AIC(log_super_reduced, log_reduced, log_full)
 
 # Cooks distance check
+plot(log_full, which = 5)
 plot(log_reduced, which = 5)
+plot(log_super_reduced, which = 5)
 
 # Exploratory plots
 plot(df$work_life_balance_ratio, df$turnover_risk,
@@ -324,7 +325,7 @@ pred_data <- data.frame(
   salary = salary_fixed
 )
 
-pred_probs <- predict(log_reduced, newdata = pred_data, type = "response") 
+pred_probs <- predict(log_reduced, newdata = pred_data, type = "response") # Get predictions from model with lowest AIC
 
 plot(wlb_seq, pred_probs,
      type = "l",
