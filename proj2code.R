@@ -175,14 +175,13 @@ anova(lin_simple, lin_multi, lin_multi_int)
 # Correlation between predictors (multicollinearity check)
 cor(df$performance_rating, df$sleep_hours_avg)
 
-# Cook's contours plot
-plot(lin_multi_int, which = 5)  
+# Cook's contours plots
+plot(lin_multi_int, which = 5) # interaction
+plot(lin_multi, which = 5)  # no interaction
 
-# Normality test on residuals + interaction
-shapiro.test(residuals(lin_multi_int)) # pass
-
-# Normality test on residuals (no interaction)
-shapiro.test(residuals(lin_multi)) # pass
+# Normality test on residuals
+shapiro.test(residuals(lin_multi_int)) # interaction, pass
+shapiro.test(residuals(lin_multi)) # no interaction, pass
 
 ## Plot 3d model, no interaction 
 ## 3D regression plane
@@ -230,6 +229,8 @@ points(
   col = rgb(0.1, 0.2, 0.9, 0.7)
 )
 
+# Cooks distance check for multiple model with no interaction
+
 par(mfrow = c(1, 3))
 
 # Residuals vs Fitted
@@ -254,6 +255,8 @@ hist(residuals(lin_multi),
      col = "#99B2FF", border = "#003399")
 
 par(mfrow = c(1, 1)) # Reset figure
+
+
 
 # (7) LOGISTIC REGRESSION (2 predictors + interaction) ------------------------------
 # Work-Life Balance Ratio and Salary predicting turnover
